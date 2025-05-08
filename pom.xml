@@ -47,6 +47,11 @@
       <artifactId>rest-assured</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.smallrye.reactive</groupId>
+      <artifactId>smallrye-mutiny-vertx-core</artifactId>
+      <version>3.18.1</version>
+    </dependency>
   </dependencies>
   <build>
     <plugins>
