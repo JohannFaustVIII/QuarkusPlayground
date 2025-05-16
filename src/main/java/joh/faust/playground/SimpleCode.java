@@ -25,6 +25,7 @@ public class SimpleCode {
 
         invokeAndCall();
         asyncTransform();
+        infiniteMulti();
     }
 
     private static void invokeAndCall() {
@@ -49,6 +50,17 @@ public class SimpleCode {
 
         Multi.createFrom().items(6, 1, 7)
                 .onItem().transformToUniAndConcatenate(i -> Uni.createFrom().item("Hello Concatenated " + i).onItem().delayIt().by(Duration.ofSeconds(i)))
+                .subscribe().with(System.out::println);
+    }
+
+    private static void infiniteMulti() {
+        Multi.createFrom().generator(() -> -1, (n, emitter) -> {
+            emitter.emit(n + 1);
+            return n + 1;
+        })
+                .select().when(i -> Uni.createFrom().item((int)i % 2 == 0))
+                .skip().first(10)
+                .select().first(20)
                 .subscribe().with(System.out::println);
     }
 }
