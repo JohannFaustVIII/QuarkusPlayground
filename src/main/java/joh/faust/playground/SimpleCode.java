@@ -4,6 +4,9 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 import java.time.Duration;
+import java.util.concurrent.Executors;
+
+import static java.lang.Thread.currentThread;
 
 public class SimpleCode {
 
@@ -54,13 +57,19 @@ public class SimpleCode {
     }
 
     private static void infiniteMulti() {
+        System.out.println("Home thread: " + currentThread());
         Multi.createFrom().generator(() -> -1, (n, emitter) -> {
             emitter.emit(n + 1);
             return n + 1;
         })
                 .select().when(i -> Uni.createFrom().item((int)i % 2 == 0))
                 .skip().first(10)
-                .select().first(20)
-                .subscribe().with(System.out::println);
+                .select().first(1)
+                .onItem().invoke(c -> System.out.println("Before emitOn " + c.toString() + " " + currentThread()))
+//                .runSubscriptionOn(Executors.newSingleThreadExecutor()) //upstream
+                .onItem().invoke(c -> System.out.println("Between emitOn " + c.toString() + " " + currentThread()))
+                .emitOn(Executors.newSingleThreadExecutor()) //downstream
+                .onItem().invoke(c -> System.out.println("After emitOn " + c.toString() + " " + currentThread()))
+                .subscribe().with(i -> System.out.println("Subscribe: " + i + " " + currentThread()));
     }
 }
