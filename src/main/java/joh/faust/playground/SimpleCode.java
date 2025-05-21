@@ -4,7 +4,9 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.concurrent.Executors;
+import java.util.stream.Stream;
 
 import static java.lang.Thread.currentThread;
 
@@ -26,9 +28,10 @@ public class SimpleCode {
                 .onItem().transform(c -> "Character: " + c)
                 .subscribe().with(System.out::println);
 
-        invokeAndCall();
-        asyncTransform();
-        infiniteMulti();
+//        invokeAndCall();
+//        asyncTransform();
+//        infiniteMulti();
+        blockingIterable();
     }
 
     private static void invokeAndCall() {
@@ -71,5 +74,21 @@ public class SimpleCode {
                 .emitOn(Executors.newSingleThreadExecutor()) //downstream
                 .onItem().invoke(c -> System.out.println("After emitOn " + c.toString() + " " + currentThread()))
                 .subscribe().with(i -> System.out.println("Subscribe: " + i + " " + currentThread()));
+    }
+
+    private static void blockingIterable() {
+        Iterable<Integer> it = Multi.createFrom().items(6, 1, 7)
+                .onItem().transformToUniAndMerge(i -> Uni.createFrom().item(i).onItem().delayIt().by(Duration.ofSeconds(i)))
+                .subscribe().asIterable();
+
+        for (Integer i : it) {
+            System.out.println(LocalDateTime.now() + " Blocking iterable: " + i);
+        }
+
+        Stream<Integer> stream = Multi.createFrom().items(6, 1, 7)
+                .onItem().transformToUniAndMerge(i -> Uni.createFrom().item(i).onItem().delayIt().by(Duration.ofSeconds(i)))
+                .subscribe().asStream();
+
+        stream.forEach(i -> System.out.println(LocalDateTime.now() + " Stream: " + i));
     }
 }
