@@ -34,6 +34,8 @@ public class SimpleVerticle extends AbstractVerticle {
 
         String response = "Hello World to " + name + "; Counter = " + counter;
 
+        vertx.eventBus().send("NAME_WATCHER", name);
+
         routingContext.response()
                 .putHeader("content-type", "application/json")
                 .setStatusCode(200)
@@ -48,6 +50,9 @@ public class SimpleVerticle extends AbstractVerticle {
         vertx.deployVerticle(SimpleVerticle::new, new DeploymentOptions())
                         .subscribe()
                                 .with(System.out::println);
+        vertx.deployVerticle(WatcherVerticle::new, new DeploymentOptions())
+                .subscribe()
+                .with(System.out::println);
         System.out.println("Complete.");
     }
 }
