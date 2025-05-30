@@ -5,10 +5,15 @@ import io.smallrye.mutiny.vertx.core.AbstractVerticle;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.json.Json;
 import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.core.eventbus.Message;
 import io.vertx.mutiny.ext.web.Router;
 import io.vertx.mutiny.ext.web.RoutingContext;
 
+import java.time.Duration;
+
 public class SimpleVerticle extends AbstractVerticle {
+
+    private long ping_counter = 0;
 
     private long counter = 0;
 
@@ -18,6 +23,12 @@ public class SimpleVerticle extends AbstractVerticle {
 
         Router router = Router.router(vertx);
         router.get("/hello/:name").handler(this::getHello);
+
+        vertx.eventBus().consumer("PING_PONG").handler(
+                message -> {
+                    reply(Uni.createFrom().item(message));
+                }
+        );
 
         return vertx.createHttpServer()
                 .requestHandler(router)
@@ -42,7 +53,15 @@ public class SimpleVerticle extends AbstractVerticle {
                 .endAndForget(Json.encodePrettily(response));
     }
 
-
+    private void reply(Uni<Message<Object>> uni) {
+        uni.onItem().delayIt().by(Duration.ofSeconds(1)).
+                subscribe().with(mess -> {
+                    ping_counter++;
+                    String body = (String) mess.body();
+                    System.out.println("Simple Received: " + body);
+                    reply(mess.replyAndRequest("ping " + ping_counter));
+                });
+    }
 
     public static void main(String[] args) {
         Vertx vertx = Vertx.vertx();
